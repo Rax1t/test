@@ -480,7 +480,7 @@ def train(dataset="shakespeare_char", out_dir="run_0", seed_offset=0):
 
     # compile the model
     if compile:
-    print("Skipping torch.compile() - Not supported on Tesla P100.")
+        print("Skipping torch.compile() - Not supported on Tesla P100.")
 
     # helps estimate an arbitrarily accurate loss over either split using many batches
     @torch.no_grad()
