@@ -13,6 +13,20 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+# 🔹 Force Eager Mode (disable TorchInductor)
+os.environ["TORCH_COMPILE_BACKEND"] = "eager"
+
+# 🔹 Suppress Compilation Errors
+import torch._dynamo
+torch._dynamo.config.suppress_errors = True
+
+# 🔹 Force Torch to Use Compatible CUDA Version
+os.environ["TORCHINDUCTOR_CUDA_VERSION"] = "60"  # Tesla P100 (sm_60)
+
+# 🔹 Ensure Float16 Instead of BF16
+torch.set_float32_matmul_precision("medium")
+
+print("🚀 Environment adjusted for Tesla P100 (CUDA sm_60)")
 
 # --- BEGIN model.py ---
 class LayerNorm(nn.Module):
@@ -350,12 +364,8 @@ def train(dataset="shakespeare_char", out_dir="run_0", seed_offset=0):
     backend = "nccl"  # 'nccl', 'gloo', etc.
     # system
     device = "cuda"  # Always use CUDA
-    dtype = (
-        "bfloat16"
-        if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
-        else "float16"
-    )  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
-    compile = True  # do not torch compile the model on macbooks
+    dtype = "float16"  # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
+    compile = False  # do not torch compile the model on macbooks
 
     # various inits, derived attributes, I/O setup
     # if not ddp, we are running on a single gpu, and one process
@@ -470,9 +480,7 @@ def train(dataset="shakespeare_char", out_dir="run_0", seed_offset=0):
 
     # compile the model
     if compile:
-        print("compiling the model... (takes a ~minute)")
-        unoptimized_model = model
-        model = torch.compile(model)  # requires PyTorch 2.0
+    print("Skipping torch.compile() - Not supported on Tesla P100.")
 
     # helps estimate an arbitrarily accurate loss over either split using many batches
     @torch.no_grad()
